@@ -1,0 +1,141 @@
+// docs/architecture.likec4
+specification {
+  element person {
+    style {
+      shape person
+      color green
+    }
+  }
+  element system
+  element container
+  element component
+}
+
+model {
+  user = person 'User' {
+    description 'Пользователь платформы лояльности'
+    -> cloud.ui 'Просматривает промокоды и скидки'
+  }
+
+  business = person 'Business' {
+    description 'Бизнес-пользователь'
+    -> cloud.ui 'Управляет промокодами и программами лояльности'
+  }
+
+  cloud = system 'Loyalty Platform' {
+    ui = container 'UI' {
+      technology 'Vue.js, Nuxt 3'
+      description 'Веб-интерфейс для работы с промокодами'
+      -> apigateway 'Отправляет запросы пользователя' 'HTTPS/REST'
+    }
+
+    apigateway = container 'API Gateway' {
+      technology 'Node.js, Express'
+      description 'Маршрутизатор запросов с UI к соответствующим микросервисам'
+      -> users 'Перенаправляет запросы на аутентификацию' 'gRPC'
+      -> promos 'Перенаправляет запросы на управление промокодами' 'gRPC'
+      -> stats 'Перенаправляет запросы на получение статистики' 'gRPC'
+
+      component routing 'Router' 'Маршрутизация запросов между сервисами'
+      component auth 'Authorization' 'Проверка прав доступа'
+      component cache 'Cache' 'Кэширование частых запросов'
+
+      routing -> auth 'Проверяет токен'
+      routing -> cache 'Проверяет кэш'
+    }
+
+    users = container 'Users Service' {
+      technology 'Go, Gin'
+      description 'Управление пользователями и бизнес-аккаунтами'
+
+      component authApi 'Auth API' 'API для аутентификации'
+      component profileApi 'Profile API' 'API для управления профилями'
+      component businessApi 'Business API' 'API для управления бизнес-аккаунтами'
+      component usersDB 'Users Database' 'База данных пользователей' {
+        technology 'PostgreSQL 16'
+        style {
+          shape cylinder
+        }
+      }
+
+      authApi -> usersDB 'Читает/пишет данные пользователей' 'SQL'
+      profileApi -> usersDB 'Управляет профилями' 'SQL'
+      businessApi -> usersDB 'Управляет бизнес-аккаунтами' 'SQL'
+    }
+
+    promos = container 'Promo Service' {
+      technology 'Go, Gin'
+      description 'Управление промокодами, скидками и комментариями'
+      -> statsBroker 'Отправляет события промокодов' 'AMQP'
+
+      component promoApi 'Promo API' 'API для работы с промокодами'
+      component commentApi 'Comments API' 'API для работы с комментариями'
+      component filterApi 'Filter API' 'API для поиска и фильтрации'
+      component validationApi 'Validation API' 'Валидация правил промокодов'
+      component promosDB 'Promos Database' 'База данных промокодов' {
+        technology 'PostgreSQL 16'
+        style {
+          shape cylinder
+        }
+      }
+
+      promoApi -> validationApi 'Проверяет правила' 'Internal'
+      promoApi -> promosDB 'Управляет промокодами' 'SQL'
+      commentApi -> promosDB 'Управляет комментариями' 'SQL'
+      filterApi -> promosDB 'Поиск по базе' 'SQL'
+      
+      promoApi -> statsBroker 'Публикует события создания/использования промокодов' 'AMQP'
+      commentApi -> statsBroker 'Публикует события комментариев' 'AMQP'
+    }
+
+    stats = container 'Stats Service' {
+      technology 'Go, Gin'
+      description 'Сбор и анализ статистики использования промокодов'
+      -> statsBroker 'Подписывается на события' 'AMQP'
+
+      component analyticsApi 'Analytics API' 'API для получения статистики'
+      component eventProcessor 'Event Processor' 'Обработка событий'
+      component reportGenerator 'Report Generator' 'Генерация отчетов'
+      component statsDB 'Stats Database' 'База данных статистики' {
+        technology 'ClickHouse'
+        style {
+          shape cylinder
+        }
+      }
+
+      analyticsApi -> statsDB 'Читает статистику' 'ClickHouse Protocol'
+      eventProcessor -> statsDB 'Записывает события' 'ClickHouse Protocol'
+      reportGenerator -> statsDB 'Генерирует отчеты' 'ClickHouse Protocol'
+      
+      eventProcessor -> statsBroker 'Получает события для обработки' 'AMQP'
+    }
+
+    statsBroker = container 'Stats Broker' {
+      technology 'Apache Kafka'
+      style {
+        shape queue
+      }
+      description 'Брокер сообщений для асинхронной обработки событий'
+    }
+  }
+}
+
+views {
+  view index {
+    title 'Loyalty Platform Architecture'
+    include *, cloud.*
+    style cloud.* {
+      color green
+    }
+  }
+
+  view containers {
+    title 'Platform Containers'
+    include cloud.*
+  }
+
+  view components {
+    title 'Platform Components'
+    include *
+  }
+}
