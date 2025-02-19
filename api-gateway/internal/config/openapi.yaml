@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: PromoService API Gateway
+  version: 1.0.0
+  description: API Gateway для PromoService
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        login:
+          type: string
+        email:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        birth_date:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required:
+        - login
+        - password
+        - email
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+          format: password
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        birth_date:
+          type: string
+          format: date-time
+
+    LoginRequest:
+      type: object
+      required:
+        - login
+        - password
+      properties:
+        login:
+          type: string
+        password:
+          type: string
+          format: password
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        birth_date:
+          type: string
+          format: date-time
+
+paths:
+  /users/register:
+    post:
+      summary: Регистрация нового пользователя
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+
+  /users/login:
+    post:
+      summary: Аутентификация пользователя
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+
+  /users/profile:
+    get:
+      summary: Получение профиля пользователя
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Успешное получение профиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    put:
+      summary: Обновление профиля пользователя
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Успешное обновление профиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User' 

@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - USER_SERVICE_ADDRESS=user-service:50051
+      - PROMO_SERVICE_ADDRESS=promo-service:50052
+      - JWT_SECRET=your-secret-key
+    depends_on:
+      - user-service
+      - promo-service
+    networks:
+      - app-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    ports:
+      - "50051:50051"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=promoservice
+      - JWT_SECRET=your-secret-key
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/promoservice?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  promo-service:
+    build:
+      context: .
+      dockerfile: promo-service/Dockerfile
+    ports:
+      - "50052:50052"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=promoservice
+      - JWT_SECRET=your-secret-key
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/promoservice?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=promoservice
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./user-service/internal/repository/migrations:/migrations/user
+      - ./promo-service/internal/repository/migrations:/migrations/promo
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge 

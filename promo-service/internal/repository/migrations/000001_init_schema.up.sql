@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS promos (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    creator_id UUID NOT NULL,
+    discount_amount DECIMAL(10,2) NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    valid_until TIMESTAMP WITH TIME ZONE NOT NULL,
+    max_uses INTEGER NOT NULL DEFAULT 0,
+    current_uses INTEGER NOT NULL DEFAULT 0
+); 
