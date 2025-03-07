@@ -1,0 +1,196 @@
+openapi: 3.0.1
+info:
+  title: Лояльность и предложения
+  description: API для управления пользователями, предложениями и бизнес-аккаунтами.
+  version: 0.1
+  contact:
+    name: Сарвар Юлдашев
+    email: sarvar010104@gmail.com
+
+servers:
+  - url: http://localhost:8080
+    description: API Gateway
+
+paths:
+  /register:
+    post:
+      summary: Регистрация пользователя
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+                email:
+                  type: string
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+                phone:
+                  type: string
+              required:
+                - login
+                - password
+                - email
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Некорректный запрос
+          
+  /login:
+    post:
+      summary: Аутентификация пользователя
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                password:
+                  type: string
+              required:
+                - login
+                - password
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '400':
+          description: Некорректный запрос
+        '401':
+          description: Неверные учетные данные
+
+  /user/{login}:
+    get:
+      summary: Получить профиль пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: login
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Пользователь не найден
+          
+    put:
+      summary: Обновить профиль пользователя
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: login
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+                phone:
+                  type: string
+              required:
+                - firstName
+                - lastName
+      responses:
+        '200':
+          description: Успешное обновление профиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Некорректный запрос
+        '404':
+          description: Пользователь не найден
+
+  /{proxyPath+}:
+    any:
+      summary: Прокси запросов к другим сервисам
+      description: Прокси-сервер для перенаправления запросов.
+      responses:
+        '302':
+          description: Перенаправление
+        '500':
+          description: Ошибка сервера
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        login:
+          type: string
+          example: user123
+        password:
+          type: string
+          example: password123
+        email:
+          type: string
+          example: user@example.com
+        firstName:
+          type: string
+          example: Иван
+        lastName:
+          type: string
+          example: Иванов
+        birthDate:
+          type: string
+          format: date
+          example: '1990-01-01'
+        phone:
+          type: string
+          example: '+79161234567'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
