@@ -20,8 +20,8 @@ func NewPostgresUserRepository(db *sql.DB) UserRepository {
 
 func (r *postgresUserRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
-		INSERT INTO users (id, login, password_hash, email, first_name, last_name, phone, birth_date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		INSERT INTO users (id, login, password_hash, email, first_name, last_name, phone, role, birth_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, created_at, updated_at`
 
 	return r.db.QueryRowContext(ctx, query,
@@ -32,6 +32,7 @@ func (r *postgresUserRepository) CreateUser(ctx context.Context, user *models.Us
 		user.FirstName,
 		user.LastName,
 		user.Phone,
+		user.Role,
 		user.BirthDate,
 		user.CreatedAt,
 		user.UpdatedAt,
@@ -40,7 +41,7 @@ func (r *postgresUserRepository) CreateUser(ctx context.Context, user *models.Us
 
 func (r *postgresUserRepository) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
 	query := `
-		SELECT id, login, password_hash, email, first_name, last_name, phone, birth_date, created_at, updated_at
+		SELECT id, login, password_hash, email, first_name, last_name, phone, role, birth_date, created_at, updated_at
 		FROM users
 		WHERE login = $1`
 
@@ -53,6 +54,7 @@ func (r *postgresUserRepository) GetUserByLogin(ctx context.Context, login strin
 		&user.FirstName,
 		&user.LastName,
 		&user.Phone,
+		&user.Role,
 		&user.BirthDate,
 		&user.CreatedAt,
 		&user.UpdatedAt,
@@ -70,7 +72,7 @@ func (r *postgresUserRepository) GetUserByLogin(ctx context.Context, login strin
 
 func (r *postgresUserRepository) GetUserByEmail(ctx context.Context, login string) (*models.User, error) {
 	query := `
-		SELECT id, login, password_hash, email, first_name, last_name, phone, birth_date, created_at, updated_at
+		SELECT id, login, password_hash, email, first_name, last_name, phone, role, birth_date, created_at, updated_at
 		FROM users
 		WHERE email = $1`
 
@@ -83,6 +85,7 @@ func (r *postgresUserRepository) GetUserByEmail(ctx context.Context, login strin
 		&user.FirstName,
 		&user.LastName,
 		&user.Phone,
+		&user.Role,
 		&user.BirthDate,
 		&user.CreatedAt,
 		&user.UpdatedAt,
@@ -105,7 +108,7 @@ func (r *postgresUserRepository) GetUserByID(ctx context.Context, id string) (*m
 	}
 
 	query := `
-		SELECT id, login, password_hash, email, first_name, last_name, phone, birth_date, created_at, updated_at
+		SELECT id, login, password_hash, email, first_name, last_name, phone, role, birth_date, created_at, updated_at
 		FROM users
 		WHERE id = $1`
 
@@ -118,6 +121,7 @@ func (r *postgresUserRepository) GetUserByID(ctx context.Context, id string) (*m
 		&user.FirstName,
 		&user.LastName,
 		&user.Phone,
+		&user.Role,
 		&user.BirthDate,
 		&user.CreatedAt,
 		&user.UpdatedAt,
@@ -136,8 +140,8 @@ func (r *postgresUserRepository) GetUserByID(ctx context.Context, id string) (*m
 func (r *postgresUserRepository) UpdateUser(ctx context.Context, user *models.User) error {
 	query := `
 		UPDATE users
-		SET email = $1, first_name = $2, last_name = $3, phone = $4, birth_date = $5, updated_at = $6
-		WHERE id = $7
+		SET email = $1, first_name = $2, last_name = $3, phone = $4, role = $5, birth_date = $6, updated_at = $7
+		WHERE id = $8
 		RETURNING updated_at`
 
 	return r.db.QueryRowContext(ctx, query,
@@ -145,6 +149,7 @@ func (r *postgresUserRepository) UpdateUser(ctx context.Context, user *models.Us
 		user.FirstName,
 		user.LastName,
 		user.Phone,
+		user.Role,
 		user.BirthDate,
 		time.Now(),
 		user.ID,

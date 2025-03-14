@@ -9,10 +9,10 @@ RUN apk add --no-cache git protobuf-dev
 COPY . .
 
 # Загружаем зависимости
-RUN cd user-service && go mod download
+RUN cd promo-service && go mod download
 
 # Собираем приложение
-RUN cd user-service && CGO_ENABLED=0 GOOS=linux go build -o /src/bin/user-service ./cmd/main.go
+RUN cd promo-service && CGO_ENABLED=0 GOOS=linux go build -o /src/bin/promo-service ./cmd/main.go
 
 # Создаем финальный образ
 FROM alpine:latest
@@ -20,8 +20,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Копируем бинарный файл из builder
-COPY --from=builder /src/bin/user-service .
-COPY --from=builder /src/user-service/internal/repository/migrations /migrations
+COPY --from=builder /src/bin/promo-service .
 
-EXPOSE 50051
-CMD ["./user-service"] 
+# Запускаем приложение
+CMD ["./promo-service"] 

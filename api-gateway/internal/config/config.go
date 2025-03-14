@@ -5,23 +5,24 @@ import (
 )
 
 type Config struct {
-	Port               string
-	JWTSecret          string
-	UserServiceAddress string
+	Port                string
+	UserServiceAddress  string
+	PromoServiceAddress string
+	JWTSecret           string
 }
 
 func NewConfig() *Config {
 	return &Config{
-		Port:               getEnv("PORT", "8080"),
-		JWTSecret:          getEnv("JWT_SECRET", "your-secret-key"),
-		UserServiceAddress: getEnv("USER_SERVICE_ADDRESS", "user-service:50051"),
+		Port:                getEnv("PORT", "8080"),
+		UserServiceAddress:  getEnv("USER_SERVICE_ADDRESS", "localhost:50051"),
+		PromoServiceAddress: getEnv("PROMO_SERVICE_ADDRESS", "localhost:50052"),
+		JWTSecret:           getEnv("JWT_SECRET", "your-secret-key"),
 	}
 }
 
 func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
-	return value
+	return defaultValue
 }

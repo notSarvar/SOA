@@ -25,7 +25,7 @@ func NewUserService(repo repository.UserRepository, jwtSecret string) *UserServi
 	}
 }
 
-func (s *UserService) Register(ctx context.Context, login, password, email string) (*models.User, string, error) {
+func (s *UserService) Register(ctx context.Context, login, password, email string, role string) (*models.User, string, error) {
 	existingUser, err := s.repo.GetUserByLogin(ctx, login)
 	if err != nil {
 		return nil, "", err
@@ -44,6 +44,7 @@ func (s *UserService) Register(ctx context.Context, login, password, email strin
 		Login:        login,
 		PasswordHash: string(hashedPassword),
 		Email:        email,
+		Role:         role,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}
@@ -52,7 +53,7 @@ func (s *UserService) Register(ctx context.Context, login, password, email strin
 		return nil, "", err
 	}
 
-	token, err := s.generateToken(user.ID)
+	token, err := s.generateToken(user.ID, user.Role)
 	if err != nil {
 		return nil, "", err
 	}
@@ -90,7 +91,7 @@ func (s *UserService) Login(ctx context.Context, login, password, email string) 
 	}
 
 	// Генерируем токен
-	token, err := s.generateToken(user.ID)
+	token, err := s.generateToken(user.ID, user.Role)
 	if err != nil {
 		return nil, "", err
 	}
@@ -126,9 +127,10 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID string, email, f
 	return user, nil
 }
 
-func (s *UserService) generateToken(userID uuid.UUID) (string, error) {
+func (s *UserService) generateToken(userID uuid.UUID, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id": userID.String(),
+		"role":    role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 

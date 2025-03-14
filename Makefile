@@ -1,40 +1,69 @@
-.PHONY: build proto migrate-up migrate-down test clean docker-up docker-down logs help
+.PHONY: proto build run test clean migrate-up migrate-down
 
 # Переменные
 PROTO_DIR=proto
 USER_SERVICE_DIR=user-service
 API_GATEWAY_DIR=api-gateway
-MIGRATIONS_DIR=$(USER_SERVICE_DIR)/internal/repository/migrations
+PROMO_SERVICE_DIR=promo-service
+USER_MIGRATIONS_DIR=$(USER_SERVICE_DIR)/internal/repository/migrations
+PROMO_MIGRATIONS_DIR=$(PROMO_SERVICE_DIR)/internal/repository/migrations
 DOCKER_COMPOSE=docker-compose
-
-# Сборка
-build:
-	@echo "Building user-service..."
-	cd $(USER_SERVICE_DIR) && go build -o bin/user-service ./cmd
-	@echo "Building api-gateway..."
-	cd $(API_GATEWAY_DIR) && go build -o bin/api-gateway ./cmd
 
 # Генерация proto файлов
 proto:
-	@echo "Generating proto files..."
-	cd $(PROTO_DIR) && protoc --go_out=. --go_opt=paths=source_relative \
+	cd proto && \
+	protoc --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
-		user/user.proto
+		user/user.proto promo/promo.proto
+
+# Сборка всех сервисов
+build: proto
+	cd api-gateway && go build -o bin/api-gateway cmd/main.go
+	cd user-service && go build -o bin/user-service cmd/main.go
+	cd promo-service && go build -o bin/promo-service cmd/main.go
+
+# Запуск через Docker Compose
+run:
+	docker-compose up --build
+
+# Запуск тестов
+test:
+	cd api-gateway && go test ./...
+	cd user-service && go test ./...
+	cd promo-service && go test ./...
+
+# Очистка бинарных файлов
+clean:
+	rm -f api-gateway/bin/*
+	rm -f user-service/bin/*
+	rm -f promo-service/bin/*
+
+# Установка зависимостей
+deps:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# Обновление зависимостей
+tidy:
+	cd api-gateway && go mod tidy
+	cd user-service && go mod tidy
+	cd promo-service && go mod tidy
+	cd proto && go mod tidy
 
 # Миграции
 migrate-up:
-	@echo "Applying migrations..."
-	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/000001_init_schema.up.sql
+	@echo "Applying user-service migrations..."
+	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/user/000001_init_schema.up.sql
+	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/user/000002_add_role.up.sql
+	@echo "Applying promo-service migrations..."
+	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/promo/000001_init_schema.up.sql
 
 migrate-down:
-	@echo "Rolling back migrations..."
-	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/000001_init_schema.down.sql
-
-# Тесты
-test:
-	@echo "Running tests..."
-	cd $(USER_SERVICE_DIR) && go test -v ./...
-	cd $(API_GATEWAY_DIR) && go test -v ./...
+	@echo "Rolling back promo-service migrations..."
+	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/promo/000001_init_schema.down.sql
+	@echo "Rolling back user-service migrations..."
+	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/user/000002_add_role.down.sql
+	$(DOCKER_COMPOSE) exec -T db psql -U postgres -d promoservice -f /migrations/user/000001_init_schema.down.sql
 
 docker-up:
 	@echo "Starting services..."

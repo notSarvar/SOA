@@ -1,23 +1,26 @@
 FROM golang:1.21-alpine AS builder
 
-WORKDIR /build
+WORKDIR /src
 
-# Устанавливаем необходимые зависимости для сборки
+# Устанавливаем необходимые инструменты
 RUN apk add --no-cache git protobuf-dev
 
-# Копируем файлы проекта
+# Копируем все файлы проекта
 COPY . .
 
-# Скачиваем зависимости
+# Загружаем зависимости
 RUN cd api-gateway && go mod download
 
 # Собираем приложение
-RUN cd api-gateway && CGO_ENABLED=0 GOOS=linux go build -o /build/bin/api-gateway ./cmd/main.go
+RUN cd api-gateway && CGO_ENABLED=0 GOOS=linux go build -o /src/bin/api-gateway ./cmd/main.go
 
+# Создаем финальный образ
 FROM alpine:latest
 
 WORKDIR /app
-COPY --from=builder /build/bin/api-gateway .
 
-EXPOSE 8080
+# Копируем бинарный файл из builder
+COPY --from=builder /src/bin/api-gateway .
+
+# Запускаем приложение
 CMD ["./api-gateway"] 

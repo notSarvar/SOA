@@ -28,11 +28,12 @@ func NewUserClient(address string) (*UserClient, error) {
 	}, nil
 }
 
-func (c *UserClient) Register(ctx context.Context, login, password, email string) (*user.User, string, error) {
+func (c *UserClient) Register(ctx context.Context, login, password, email, role string) (*user.User, string, error) {
 	resp, err := c.client.Register(ctx, &user.RegisterRequest{
 		Login:    login,
 		Password: password,
 		Email:    email,
+		Role:     role,
 	})
 	if err != nil {
 		return nil, "", err

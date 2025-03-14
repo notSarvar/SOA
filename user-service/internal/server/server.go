@@ -62,7 +62,7 @@ func (s *Server) Stop() {
 func (s *Server) Register(ctx context.Context, req *user.RegisterRequest) (*user.RegisterResponse, error) {
 	log.Println("Registering new user with login and email", req.Login, req.Email)
 
-	u, token, err := s.userService.Register(ctx, req.Login, req.Password, req.Email)
+	u, token, err := s.userService.Register(ctx, req.Login, req.Password, req.Email, req.Role)
 	if err != nil {
 		log.Printf("Something went wrong while registering")
 		return nil, err

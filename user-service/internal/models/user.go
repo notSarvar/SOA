@@ -26,6 +26,7 @@ type User struct {
 	FirstName    string    `json:"first_name" validate:"max=50"`
 	LastName     string    `json:"last_name" validate:"max=50"`
 	Phone        string    `json:"phone" validate:"omitempty,phone"`
+	Role         string    `json:"role" validate:"required,oneof=user business admin"`
 	BirthDate    time.Time `json:"birth_date" validate:"omitempty"`
 	CreatedAt    time.Time `json:"created_at" validate:"required"`
 	UpdatedAt    time.Time `json:"updated_at" validate:"required"`
@@ -61,6 +62,7 @@ func (u *User) ToProto() *user.User {
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
 		Phone:     u.Phone,
+		Role:      u.Role,
 		BirthDate: timestamppb.New(u.BirthDate),
 		CreatedAt: timestamppb.New(u.CreatedAt),
 		UpdatedAt: timestamppb.New(u.UpdatedAt),
@@ -80,6 +82,7 @@ func UserFromProto(protoUser *user.User) (*User, error) {
 		FirstName: protoUser.FirstName,
 		LastName:  protoUser.LastName,
 		Phone:     protoUser.Phone,
+		Role:      protoUser.Role,
 		BirthDate: protoUser.BirthDate.AsTime(),
 		CreatedAt: protoUser.CreatedAt.AsTime(),
 		UpdatedAt: protoUser.UpdatedAt.AsTime(),
@@ -93,6 +96,7 @@ type RegisterRequest struct {
 	FirstName string     `json:"first_name"`
 	LastName  string     `json:"last_name"`
 	Phone     string     `json:"phone"`
+	Role      string     `json:"role" validate:"required,oneof=user business admin"`
 	BirthDate *time.Time `json:"birth_date"`
 }
 

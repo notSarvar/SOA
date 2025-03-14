@@ -22,12 +22,6 @@ func NewJWTConfig(secretKey string) *JWTConfig {
 func (c *JWTConfig) JWTAuth() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
-			// Пропускаем запросы на регистрацию и вход без авторизации
-			path := ctx.Request().URL.Path
-			if path == "/users/register" || path == "/users/login" {
-				return next(ctx)
-			}
-
 			authHeader := ctx.Request().Header.Get("Authorization")
 			if authHeader == "" {
 				return ctx.JSON(http.StatusUnauthorized, map[string]string{"error": "Authorization header is required"})
@@ -57,6 +51,14 @@ func (c *JWTConfig) JWTAuth() echo.MiddlewareFunc {
 				}
 
 				ctx.Set("user_id", userID)
+
+				// Set default role if not present in claims
+				if role, ok := claims["role"].(string); ok {
+					ctx.Set("user_role", role)
+				} else {
+					ctx.Set("user_role", "user")
+				}
+
 				return next(ctx)
 			}
 
