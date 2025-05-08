@@ -75,8 +75,24 @@ func (s *Server) CreatePromo(ctx context.Context, req *promo.CreatePromoRequest)
 }
 
 func (s *Server) UpdatePromo(ctx context.Context, req *promo.UpdatePromoRequest) (*promo.UpdatePromoResponse, error) {
-	userID := ctx.Value("user_id").(string)
-	userRole := ctx.Value("user_role").(promo.UserRole)
+	// Получаем метаданные из контекста
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "metadata is not provided")
+	}
+
+	// Получаем информацию о пользователе из метаданных
+	userIDs := md.Get("user_id")
+	if len(userIDs) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "user_id is not provided")
+	}
+	userID := userIDs[0]
+
+	userRoles := md.Get("user_role")
+	if len(userRoles) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "user_role is not provided")
+	}
+	userRole := promo.UserRole(promo.UserRole_value[userRoles[0]])
 
 	updatedPromo, err := s.service.UpdatePromo(ctx, req, userID, userRole)
 	if err != nil {
@@ -89,8 +105,24 @@ func (s *Server) UpdatePromo(ctx context.Context, req *promo.UpdatePromoRequest)
 }
 
 func (s *Server) DeletePromo(ctx context.Context, req *promo.DeletePromoRequest) (*promo.DeletePromoResponse, error) {
-	userID := ctx.Value("user_id").(string)
-	userRole := ctx.Value("user_role").(promo.UserRole)
+	// Получаем метаданные из контекста
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "metadata is not provided")
+	}
+
+	// Получаем информацию о пользователе из метаданных
+	userIDs := md.Get("user_id")
+	if len(userIDs) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "user_id is not provided")
+	}
+	userID := userIDs[0]
+
+	userRoles := md.Get("user_role")
+	if len(userRoles) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "user_role is not provided")
+	}
+	userRole := promo.UserRole(promo.UserRole_value[userRoles[0]])
 
 	err := s.service.DeletePromo(ctx, req.Id, userID, userRole)
 	if err != nil {
