@@ -13,12 +13,14 @@ import (
 )
 
 type PromoService struct {
-	repo repository.PromoRepository
+	repo        repository.PromoRepository
+	commentRepo *repository.CommentRepository
 }
 
-func NewPromoService(repo repository.PromoRepository) *PromoService {
+func NewPromoService(repo repository.PromoRepository, commentRepo *repository.CommentRepository) *PromoService {
 	return &PromoService{
-		repo: repo,
+		repo:        repo,
+		commentRepo: commentRepo,
 	}
 }
 
@@ -111,4 +113,61 @@ func (s *PromoService) GetPromo(ctx context.Context, id string) (*models.Promo, 
 
 func (s *PromoService) ListPromos(ctx context.Context, creatorID string, page, pageSize int, onlyActive bool) ([]*models.Promo, int, error) {
 	return s.repo.ListPromos(ctx, creatorID, page, pageSize, onlyActive)
+}
+
+func (s *PromoService) AddComment(ctx context.Context, promoID, clientID, commentText string) (*models.Comment, error) {
+	// Проверяем существование промо
+	promo, err := s.repo.GetPromoByID(ctx, promoID)
+	if err != nil {
+		return nil, err
+	}
+	if promo == nil {
+		return nil, errors.New("promo not found")
+	}
+
+	// Парсим UUID
+	promoUUID, err := uuid.Parse(promoID)
+	if err != nil {
+		return nil, errors.New("invalid promo ID")
+	}
+
+	clientUUID, err := uuid.Parse(clientID)
+	if err != nil {
+		return nil, errors.New("invalid client ID")
+	}
+
+	comment := &models.Comment{
+		ID:          uuid.New(),
+		PromoID:     promoUUID,
+		ClientID:    clientUUID,
+		CommentText: commentText,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	return s.commentRepo.Create(ctx, comment)
+}
+
+func (s *PromoService) GetComments(ctx context.Context, promoID string, page, pageSize int32) ([]*models.Comment, int32, error) {
+	// Проверяем существование промо
+	promo, err := s.repo.GetPromoByID(ctx, promoID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if promo == nil {
+		return nil, 0, errors.New("promo not found")
+	}
+
+	// Парсим UUID
+	promoUUID, err := uuid.Parse(promoID)
+	if err != nil {
+		return nil, 0, errors.New("invalid promo ID")
+	}
+
+	comments, total, err := s.commentRepo.GetByPromoID(ctx, promoUUID, page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return comments, int32(total), nil
 }

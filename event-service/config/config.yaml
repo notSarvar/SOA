@@ -1,0 +1,50 @@
+server:
+  port: 50053
+  host: "0.0.0.0"
+
+database:
+  host: "postgres"
+  port: 5432
+  user: "postgres"
+  password: "postgres"
+  name: "event_service"
+  ssl_mode: "disable"
+
+kafka:
+  brokers:
+    - "kafka:29092"
+  topics:
+    promo_created: "promo.created"
+    promo_updated: "promo.updated"
+    promo_deleted: "promo.deleted"
+    promo_viewed: "promo.viewed"
+    promo_clicked: "promo.clicked"
+    promo_liked: "promo.liked"
+    user_registered: "user.registered"
+    user_profile_updated: "user.profile.updated"
+  consumer:
+    group_id: "event-service"
+    auto_offset_reset: "earliest"
+    max_retries: 3
+    retry_backoff: "1s"
+  producer:
+    acks: "all"
+    retries: 3
+    retry_backoff: "100ms"
+    max_in_flight: 5
+  dead_letter:
+    topic: "event-service.dead-letter"
+    max_retries: 3
+    retry_delay: "5m"
+
+metrics:
+  enabled: true
+  port: 9090
+  path: "/metrics"
+  namespace: "event_service"
+  subsystem: "events"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout" 

@@ -8,12 +8,19 @@ import (
 	"promoservice/proto/promo"
 	"promoservice/proto/user"
 
+	"promoservice/api-gateway/internal/client"
+	"promoservice/api-gateway/internal/config"
+	"promoservice/api-gateway/internal/middleware"
+
+	"github.com/gin-gonic/gin"
 	"github.com/labstack/echo/v4"
 )
 
 type Server struct {
-	userClient  UserClient
-	promoClient PromoClient
+	config         *config.Config
+	userHandler    *UserHandler
+	promoHandler   *PromoHandler
+	authMiddleware *middleware.AuthMiddleware
 }
 
 type UserClient interface {
@@ -31,11 +38,60 @@ type PromoClient interface {
 	DeletePromo(ctx context.Context, id string, userID string, userRole promo.UserRole) error
 }
 
-func NewServer(userClient UserClient, promoClient PromoClient) *Server {
-	return &Server{
-		userClient:  userClient,
-		promoClient: promoClient,
+func NewServer(config *config.Config) (*Server, error) {
+	userClient, err := client.NewUserClient(config.UserServiceAddress)
+	if err != nil {
+		return nil, err
 	}
+
+	promoClient, err := client.NewPromoClient(config.PromoServiceAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	eventClient, err := client.NewEventClient(config.EventServiceAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	userHandler := NewUserHandler(userClient)
+	promoHandler := NewPromoHandler(promoClient, eventClient)
+	authMiddleware := middleware.NewAuthMiddleware(config.JWTSecret)
+
+	return &Server{
+		config:         config,
+		userHandler:    userHandler,
+		promoHandler:   promoHandler,
+		authMiddleware: authMiddleware,
+	}, nil
+}
+
+func (s *Server) SetupRoutes(r *gin.Engine) {
+	api := r.Group("/api/v1")
+
+	// Public routes
+	api.POST("/users/register", s.userHandler.Register)
+	api.POST("/users/login", s.userHandler.Login)
+
+	// Protected routes
+	protected := api.Group("")
+	protected.Use(s.authMiddleware.AuthRequired())
+
+	protected.GET("/users/profile", s.userHandler.GetProfile)
+	protected.PUT("/users/profile", s.userHandler.UpdateProfile)
+
+	// Promo routes
+	protected.POST("/promos", s.promoHandler.CreatePromo)
+	protected.GET("/promos", s.promoHandler.GetPromos)
+	protected.GET("/promos/:id", s.promoHandler.GetPromo)
+	protected.PUT("/promos/:id", s.promoHandler.UpdatePromo)
+	protected.DELETE("/promos/:id", s.promoHandler.DeletePromo)
+
+	// Event routes
+	protected.POST("/promos/:promo_id/view", s.promoHandler.TrackPromoView)
+	protected.POST("/promos/:promo_id/click", s.promoHandler.TrackPromoClick)
+	protected.POST("/promos/:promo_id/comments", s.promoHandler.AddPromoComment)
+	protected.GET("/promos/:promo_id/comments", s.promoHandler.GetPromoComments)
 }
 
 func (s *Server) PostUsersRegister(c echo.Context) error {

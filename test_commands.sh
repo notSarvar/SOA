@@ -12,9 +12,9 @@ echo -e "${GREEN}1. Регистрация бизнес-пользователя
 BUSINESS_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "login": "business4@example.com",
+    "login": "business44@example.com",
     "password": "password123",
-    "email": "business4@example.com",
+    "email": "business44@example.com",
     "role": "business"
   }')
 echo "$BUSINESS_RESPONSE"
@@ -26,9 +26,9 @@ echo -e "${GREEN}2. Регистрация обычного пользовате
 USER_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "login": "user4@example.com",
+    "login": "user44@example.com",
     "password": "password123",
-    "email": "user4@example.com",
+    "email": "user44@example.com",
     "role": "user"
   }')
 echo "$USER_RESPONSE"

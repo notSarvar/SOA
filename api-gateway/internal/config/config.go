@@ -8,6 +8,7 @@ type Config struct {
 	Port                string
 	UserServiceAddress  string
 	PromoServiceAddress string
+	EventServiceAddress string
 	JWTSecret           string
 }
 
@@ -16,6 +17,7 @@ func NewConfig() *Config {
 		Port:                getEnv("PORT", "8080"),
 		UserServiceAddress:  getEnv("USER_SERVICE_ADDRESS", "localhost:50051"),
 		PromoServiceAddress: getEnv("PROMO_SERVICE_ADDRESS", "localhost:50052"),
+		EventServiceAddress: getEnv("EVENT_SERVICE_ADDRESS", "localhost:50053"),
 		JWTSecret:           getEnv("JWT_SECRET", "your-secret-key"),
 	}
 }

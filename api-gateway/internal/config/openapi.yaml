@@ -94,6 +94,29 @@ components:
           type: string
           format: date-time
 
+    PromoComment:
+      type: object
+      properties:
+        id:
+          type: string
+        client_id:
+          type: string
+        promo_id:
+          type: string
+        comment_text:
+          type: string
+        commented_at:
+          type: string
+          format: date-time
+
+    PromoCommentRequest:
+      type: object
+      required:
+        - comment_text
+      properties:
+        comment_text:
+          type: string
+
 paths:
   /users/register:
     post:
@@ -176,4 +199,102 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User' 
+                $ref: '#/components/schemas/User'
+
+  /promos/{promo_id}/view:
+    post:
+      summary: Отметить просмотр промокода
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: promo_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешное сохранение просмотра
+
+  /promos/{promo_id}/click:
+    post:
+      summary: Отметить клик по промокоду
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: promo_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешное сохранение клика
+
+  /promos/{promo_id}/comments:
+    post:
+      summary: Добавить комментарий к промокоду
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: promo_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoCommentRequest'
+      responses:
+        '200':
+          description: Успешное сохранение комментария
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromoComment'
+
+    get:
+      summary: Получить комментарии к промокоду
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: promo_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Успешное получение комментариев
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  comments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PromoComment'
+                  total_count:
+                    type: integer 

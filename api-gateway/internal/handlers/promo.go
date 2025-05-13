@@ -8,17 +8,20 @@ import (
 	"promoservice/api-gateway/internal/client"
 	"promoservice/proto/promo"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type PromoHandler struct {
 	promoClient *client.PromoClient
+	eventClient *client.EventClient
 }
 
-func NewPromoHandler(promoClient *client.PromoClient) *PromoHandler {
+func NewPromoHandler(promoClient *client.PromoClient, eventClient *client.EventClient) *PromoHandler {
 	return &PromoHandler{
 		promoClient: promoClient,
+		eventClient: eventClient,
 	}
 }
 
@@ -197,4 +200,69 @@ func (s *Server) PutPromosById(c echo.Context) error {
 
 func (s *Server) DeletePromosById(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "delete promo"})
+}
+
+func (h *PromoHandler) TrackPromoView(c *gin.Context) {
+	promoID := c.Param("promo_id")
+	clientID := c.GetString("user_id")
+
+	err := h.eventClient.TrackPromoView(c.Request.Context(), clientID, promoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *PromoHandler) TrackPromoClick(c *gin.Context) {
+	promoID := c.Param("promo_id")
+	clientID := c.GetString("user_id")
+
+	err := h.eventClient.TrackPromoClick(c.Request.Context(), clientID, promoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *PromoHandler) AddPromoComment(c *gin.Context) {
+	promoID := c.Param("promo_id")
+	clientID := c.GetString("user_id")
+
+	var req struct {
+		CommentText string `json:"comment_text" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.eventClient.TrackPromoComment(c.Request.Context(), clientID, promoID, req.CommentText)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *PromoHandler) GetPromoComments(c *gin.Context) {
+	promoID := c.Param("promo_id")
+	page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
+	pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "10"), 10, 32)
+
+	response, err := h.eventClient.GetPromoComments(c.Request.Context(), promoID, int32(page), int32(pageSize))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"comments":    response.Comments,
+		"total_count": response.TotalCount,
+	})
 }
