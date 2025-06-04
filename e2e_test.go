@@ -401,7 +401,6 @@ func TestE2E_APIGatewayFlow(t *testing.T) {
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-	fmt.Println("API Gateway response:", string(respBody))
 
 	// Структура для временных полей
 	type timestamp struct {
@@ -452,7 +451,6 @@ func TestE2E_APIGatewayFlow(t *testing.T) {
 
 	respBody, err = ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-	fmt.Println("API Gateway update response:", string(respBody))
 
 	// 5. Проверяем обновленный промокод
 	req, err = http.NewRequest("GET", url, nil)
