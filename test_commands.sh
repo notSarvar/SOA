@@ -12,9 +12,9 @@ echo -e "${GREEN}1. Регистрация бизнес-пользователя
 BUSINESS_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "login": "business4@example.com",
+    "login": "business77@example.com",
     "password": "password123",
-    "email": "business4@example.com",
+    "email": "busines4s4@example.com",
     "role": "business"
   }')
 echo "$BUSINESS_RESPONSE"
@@ -26,9 +26,9 @@ echo -e "${GREEN}2. Регистрация обычного пользовате
 USER_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "login": "user4@example.com",
+    "login": "user77@example.com",
     "password": "password123",
-    "email": "user4@example.com",
+    "email": "user34@example.com",
     "role": "user"
   }')
 echo "$USER_RESPONSE"
@@ -75,8 +75,8 @@ PROMO_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/promos \
     "name": "Summer Sale 2024",
     "description": "Special summer discount",
     "discount_amount": 20,
-    "code": "SUMMER2024_TEST",
-    "valid_until": "2024-12-31T23:59:59Z",
+    "code": "SUMMER2024_TEST56",
+    "valid_until": "2024-12-31T23:59:59",
     "max_uses": 100,
     "is_active": true
   }')
