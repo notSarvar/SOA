@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"promoservice/proto/promo"
-	"promoservice/proto/user"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,8 +73,15 @@ func setupTest(t *testing.T) (context.Context, *grpc.ClientConn, *grpc.ClientCon
 	return ctx, apiConn, promoConn, userConn
 }
 
-func registerUserREST(t *testing.T, login, password, email, role string) string {
-	url := fmt.Sprintf("http://%s/register", apiGatewayAddr)
+type RegisterResponse struct {
+	User struct {
+		Id string `json:"id"`
+	} `json:"user"`
+	Token string `json:"token"`
+}
+
+func registerUserREST(t *testing.T, login, password, email, role string) (string, string) {
+	url := fmt.Sprintf("http://%s/api/v1/users/register", apiGatewayAddr)
 	body := map[string]string{
 		"login":    login,
 		"password": password,
@@ -94,12 +100,10 @@ func registerUserREST(t *testing.T, login, password, email, role string) string 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	var result struct {
-		Token string `json:"token"`
-	}
+	var result RegisterResponse
 	err = json.Unmarshal(respBody, &result)
 	require.NoError(t, err)
-	return result.Token
+	return result.User.Id, result.Token
 }
 
 func uniqueSuffix() string {
@@ -126,18 +130,12 @@ func TestE2E_BusinessUserCreatesAndManagesPromos(t *testing.T) {
 	defer userConn.Close()
 
 	promoClient := promo.NewPromoServiceClient(promoConn)
-	userClient := user.NewUserServiceClient(userConn)
 
-	// 1. Регистрируем бизнес-пользователя
-	registerResp, err := userClient.Register(ctx, &user.RegisterRequest{
-		Login:    login,
-		Password: "password123",
-		Email:    email,
-		Role:     "BUSINESS",
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, registerResp.Token)
-	userID := registerResp.User.Id
+	// 1. Регистрируем бизнес-пользователя через REST
+	userID, token := registerUserREST(t, login, "password123", email, "BUSINESS")
+	require.NotEmpty(t, userID)
+	require.NotEmpty(t, token)
+
 	userRole := "BUSINESS"
 	ctxUser := ctxWithUser(ctx, userID, userRole)
 
@@ -190,18 +188,13 @@ func TestE2E_CustomerUsesPromo(t *testing.T) {
 	defer promoConn.Close()
 	defer userConn.Close()
 
-	userClient := user.NewUserServiceClient(userConn)
 	promoClient := promo.NewPromoServiceClient(promoConn)
 
-	// 1. Регистрируем бизнес-пользователя
-	businessResp, err := userClient.Register(ctx, &user.RegisterRequest{
-		Login:    loginBusiness,
-		Password: "password123",
-		Email:    emailBusiness,
-		Role:     "BUSINESS",
-	})
-	require.NoError(t, err)
-	businessID := businessResp.User.Id
+	// 1. Регистрируем бизнес-пользователя через REST
+	businessID, businessToken := registerUserREST(t, loginBusiness, "password123", emailBusiness, "BUSINESS")
+	require.NotEmpty(t, businessID)
+	require.NotEmpty(t, businessToken)
+
 	businessRole := "BUSINESS"
 	ctxBusiness := ctxWithUser(ctx, businessID, businessRole)
 
@@ -218,17 +211,11 @@ func TestE2E_CustomerUsesPromo(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, createPromoResp)
 
-	// 3. Регистрируем обычного пользователя
-	customerResp, err := userClient.Register(ctx, &user.RegisterRequest{
-		Login:    loginCustomer,
-		Password: "password123",
-		Email:    emailCustomer,
-		Role:     "CUSTOMER",
-	})
-	require.NoError(t, err)
-	require.NotNil(t, customerResp)
-	require.NotEmpty(t, customerResp.Token)
-	customerID := customerResp.User.Id
+	// 3. Регистрируем обычного пользователя через REST
+	customerID, customerToken := registerUserREST(t, loginCustomer, "password123", emailCustomer, "CUSTOMER")
+	require.NotEmpty(t, customerID)
+	require.NotEmpty(t, customerToken)
+
 	customerRole := "CUSTOMER"
 	ctxCustomer := ctxWithUser(ctx, customerID, customerRole)
 
@@ -256,18 +243,13 @@ func TestE2E_PromoDeactivationByBusiness(t *testing.T) {
 	defer promoConn.Close()
 	defer userConn.Close()
 
-	userClient := user.NewUserServiceClient(userConn)
 	promoClient := promo.NewPromoServiceClient(promoConn)
 
-	// 1. Регистрируем бизнес-пользователя
-	businessResp, err := userClient.Register(ctx, &user.RegisterRequest{
-		Login:    login,
-		Password: "password123",
-		Email:    email,
-		Role:     "BUSINESS",
-	})
-	require.NoError(t, err)
-	businessID := businessResp.User.Id
+	// 1. Регистрируем бизнес-пользователя через REST
+	businessID, businessToken := registerUserREST(t, login, "password123", email, "BUSINESS")
+	require.NotEmpty(t, businessID)
+	require.NotEmpty(t, businessToken)
+
 	businessRole := "BUSINESS"
 	ctxBusiness := ctxWithUser(ctx, businessID, businessRole)
 
@@ -303,15 +285,11 @@ func TestE2E_PromoDeactivationByBusiness(t *testing.T) {
 	require.NotNil(t, getPromoResp)
 	assert.False(t, getPromoResp.Promo.IsActive)
 
-	// 6. Регистрируем обычного пользователя
-	customerResp, err := userClient.Register(ctx, &user.RegisterRequest{
-		Login:    loginCustomer,
-		Password: "password123",
-		Email:    emailCustomer,
-		Role:     "CUSTOMER",
-	})
-	require.NoError(t, err)
-	customerID := customerResp.User.Id
+	// 6. Регистрируем обычного пользователя через REST
+	customerID, customerToken := registerUserREST(t, loginCustomer, "password123", emailCustomer, "CUSTOMER")
+	require.NotEmpty(t, customerID)
+	require.NotEmpty(t, customerToken)
+
 	customerRole := "CUSTOMER"
 	ctxCustomer := ctxWithUser(ctx, customerID, customerRole)
 
@@ -320,4 +298,16 @@ func TestE2E_PromoDeactivationByBusiness(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, getPromoResp)
 	assert.False(t, getPromoResp.Promo.IsActive)
+}
+
+func TestE2E_RegisterUserREST(t *testing.T) {
+	cleanup := setupTestEnvironment(t)
+	defer cleanup()
+
+	suffix := uniqueSuffix()
+	login := "rest_user_" + suffix
+	email := "rest_" + suffix + "@example.com"
+	userID, token := registerUserREST(t, login, "password123", email, "CUSTOMER")
+	assert.NotEmpty(t, userID)
+	assert.NotEmpty(t, token)
 }
