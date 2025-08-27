@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package promo;
+
+option go_package = "promoservice/proto/promo";
+
+import "google/protobuf/timestamp.proto";
+
+service PromoService {
+  rpc CreatePromo(CreatePromoRequest) returns (CreatePromoResponse);
+  rpc DeletePromo(DeletePromoRequest) returns (DeletePromoResponse);
+  rpc UpdatePromo(UpdatePromoRequest) returns (UpdatePromoResponse);
+  rpc GetPromo(GetPromoRequest) returns (GetPromoResponse);
+  rpc ListPromos(ListPromosRequest) returns (ListPromosResponse);
+}
+
+enum UserRole {
+  UNKNOWN = 0;
+  CUSTOMER = 1;
+  BUSINESS = 2;
+}
+
+message Promo {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string creator_id = 4;
+  double discount_amount = 5;
+  string code = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  bool is_active = 9;
+  google.protobuf.Timestamp valid_until = 10;
+  int32 max_uses = 11;
+  int32 current_uses = 12;
+}
+
+message CreatePromoRequest {
+  string name = 1;
+  string description = 2;
+  double discount_amount = 3;
+  string code = 4;
+  google.protobuf.Timestamp valid_until = 5;
+  int32 max_uses = 6;
+}
+
+message CreatePromoResponse {
+  Promo promo = 1;
+}
+
+message DeletePromoRequest {
+  string id = 1;
+}
+
+message DeletePromoResponse {}
+
+message UpdatePromoRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double discount_amount = 4;
+  string code = 5;
+  google.protobuf.Timestamp valid_until = 6;
+  int32 max_uses = 7;
+  bool is_active = 8;
+}
+
+message UpdatePromoResponse {
+  Promo promo = 1;
+}
+
+message GetPromoRequest {
+  string id = 1;
+}
+
+message GetPromoResponse {
+  Promo promo = 1;
+}
+
+message ListPromosRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+  string creator_id = 3;
+  bool only_active = 4;
+}
+
+message ListPromosResponse {
+  repeated Promo promos = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 page_size = 4;
+} 
